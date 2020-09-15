@@ -10,13 +10,6 @@ const int httpPort = ;                    //外网服务器端口
 WiFiClient client;                            //声明客户端对象
 bool is=0;                                    //用来做连接到服务器后，仅发送一次问候语
 
-
-
-  //String switch = "";
-//  int rValue = 0;
-//  int gValue = 0;
-//  int bValue = 0;
-
 void setup() {
   Serial.begin(115200);
   Serial.println("");
@@ -109,7 +102,6 @@ void Tcp_Handler(String data){
     }
   }  
 
- 
 }
 //连接路由器
 void gotoWifi(){
