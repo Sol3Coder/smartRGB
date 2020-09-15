@@ -9,7 +9,7 @@ const char *host= "";              //外网服务器ip
 const int httpPort = ;                    //外网服务器端口
 WiFiClient client;                            //声明客户端对象
 bool is=0;                                    //用来做连接到服务器后，仅发送一次问候语
-int led=14;                                   //灯io，D5
+
 
 
   //String switch = "";
