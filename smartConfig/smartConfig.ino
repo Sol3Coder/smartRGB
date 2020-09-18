@@ -34,7 +34,6 @@ void handleRoot() {
 ******************************************************/
 void HandleVal()
 {
-    Serial.println("获取各项参数");
     STAssid = server.arg("ssid"); //从JavaScript发送的数据中找ssid的值
     STApassword = server.arg("password"); //从JavaScript发送的数据中找password的值
     serverIP = server.arg("serverIP"); //从JavaScript发送的数据中找ssid的值
@@ -140,7 +139,7 @@ void htmlConfig()
     server.begin();//开启服务器
     Serial.println("HTTP server started");
 
-    Serial.print("Waitting for config ");
+    Serial.println("Waitting for config ");
     while(1)
     {
         server.handleClient();
@@ -167,7 +166,7 @@ void connectServer() {
   if(serverIP!=""){
   Serial.println("尝试连接服务器");
   Serial.println(serverIP);
-  client.connect(serverIP, 9832);
+  client.connect(serverIP, serverPort.toInt());
   delay(1000);
   }
 
