@@ -298,11 +298,11 @@ void loop(void) {
     if (WiFi.status() != WL_CONNECTED) { 
     WiFi.disconnect();
     Serial.println("connect failure");
-    htmlConfig();
+    WiFi.begin();
     }
     else if(!client.connected()){
       Serial.println("connect failure");
-        htmlConfig();
+        connectServer();
         return;
     }
     else{
