@@ -3,6 +3,17 @@
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
 #include <ArduinoJson.h>
+#include <EEPROM.h>
+
+#include <EEPROM.h>
+//定义一个写和读的通用方法
+#define EEPROM_write(address,p) { int i = 0;byte *pp = (byte*)&(p);for(;i<sizeof(p);i++) EEPROM.write(address+i,pp[i]);EEPROM.end();}
+#define EEPROM_read(address,p) { int i = 0;byte *pp = (byte*)&(p);for(;i<sizeof(p);i++) pp[i]=EEPROM.read(address+i);}
+//注意事项 写的结尾一定要有EEPROM.end();或EEPROM.commit();目的就是提交保存操作否则不保存成功
+struct serverConfig
+{
+  char serverJson[128];
+}serverInfo;
 
 WiFiClient client;
 const char* ssid = "CONFIG-ESP8266";
@@ -11,7 +22,7 @@ String STAssid;
 String STApassword;
 String serverIP ;
 String serverPort;
-
+int address = 0;
 ESP8266WebServer server(80);
 bool LED_Flag = false;
 String str = 
@@ -40,8 +51,48 @@ void HandleVal()
     Serial.println(serverIP); 
     Serial.println(serverPort);
     WiFi.begin(STAssid,STApassword);
+    sprintf(serverInfo.serverJson,"{\"serverIP\":\"%s\",\"serverPort\":%s}",serverIP.c_str(),serverPort.c_str());
+    saveConfig();
     connectServer();  
 }
+
+void saveConfig() {
+
+  EEPROM.begin(256);//申请空间必须大于结构体长度，4的倍数
+  sprintf(serverInfo.serverJson,"{\"serverIP\":\"%s\",\"serverPort\":%s}",serverIP.c_str(),serverPort.c_str());
+  Serial.println("\n");
+  Serial.println("start");
+  Serial.println(sizeof(serverInfo));
+  EEPROM_write(0, serverInfo);//写地址128+1 结构体2
+  Serial.println("write ok!");
+
+}
+
+void readConfig()
+{
+    //------------结构体2读----------------
+  Serial.println("start read config");
+  EEPROM.begin(256);//申请空间
+  serverConfig readback;//申请变量
+  EEPROM_read(0, readback);//读数据
+  Serial.print("serverinfo:");
+  Serial.println(readback.serverJson);//打印数据
+  Serial.println("read eeprom over!");
+
+    /*-------json解析-------*/
+  DynamicJsonDocument doc(1024);
+  deserializeJson(doc, readback.serverJson);
+  JsonObject obj = doc.as<JsonObject>();
+  String IP = doc["serverIP"]; 
+  String Port = doc["serverPort"]; 
+  serverIP = IP;
+  serverPort = Port;
+  /*------串口打印rgb值----*/
+  Serial.println("Json");
+  Serial.println(serverIP);
+  Serial.println(serverPort);
+}
+
 /*****************************************************
  * 函数名称：handleNotFound()
  * 函数说明：响应失败函数
@@ -74,11 +125,17 @@ bool autoConfig()
   WiFi.mode(WIFI_STA);
   WiFi.begin();
   Serial.print("AutoConfig Waiting......");
+  readConfig();
   for (int i = 0; i < 5; i++)
   {
+    Serial.println("Trying auto config");
+    delay(1000);
     if (WiFi.status() == WL_CONNECTED)
     {
-      connectServer();  
+      Serial.println("WIFI success");
+      connectServer(); 
+      Serial.println("serverIP,after read config"); 
+      Serial.println(serverIP);
       if (client.connected()) 
         {            
             Serial.println("AutoConfig Success");
@@ -92,7 +149,6 @@ bool autoConfig()
     }
     else
     {
-      Serial.print(".");
       LED_Flag = !LED_Flag;
       if(LED_Flag)
           digitalWrite(LED_BUILTIN, HIGH);
@@ -220,6 +276,7 @@ void tcpHandler(String data){
 }
 
 void setup(void) {
+   
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, HIGH);
     Serial.begin(115200);
