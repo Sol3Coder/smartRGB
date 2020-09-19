@@ -53,7 +53,7 @@ void HandleVal()
     Serial.println(serverIP); 
     Serial.println(serverPort);
     WiFi.begin(STAssid,STApassword);
-    sprintf(serverInfo,"{\"serverIP\":\"%s\",\"serverPort\":%s}",serverIP.c_str(),serverPort.c_str());
+    sprintf(serverInfo,"{\"STAssid\":\"%s\",\"STApassword\":\"%s\",\"serverIP\":\"%s\",\"serverPort\":%s}",STAssid.c_str(),STApassword.c_str(),serverIP.c_str(),serverPort.c_str());
     saveConfig();
     connectServer();  
 }
@@ -61,8 +61,7 @@ void HandleVal()
 void saveConfig() {
 
   EEPROM.begin(256);//申请空间必须大于结构体长度，4的倍数
-  sprintf(serverInfo,"{\"serverIP\":\"%s\",\"serverPort\":%s}",serverIP.c_str(),serverPort.c_str());
-  Serial.println("\n");
+//  sprintf(serverInfo,"{\"serverIP\":\"%s\",\"serverPort\":%s}",serverIP.c_str(),serverPort.c_str());
   Serial.println("start");
   Serial.println(sizeof(serverInfo));
   EEPROM_write(0, serverInfo);//写地址128+1 结构体2
@@ -85,12 +84,18 @@ void readConfig()
   DynamicJsonDocument doc(1024);
   deserializeJson(doc, readback);
   JsonObject obj = doc.as<JsonObject>();
+  String ssid = doc["STAssid"]; 
+  String password = doc["STApassword"]; 
   String IP = doc["serverIP"]; 
   String Port = doc["serverPort"]; 
+  STAssid = ssid;
+  STApassword = password;
   serverIP = IP;
   serverPort = Port;
   /*------串口打印rgb值----*/
   Serial.println("Json");
+  Serial.println(STAssid);
+  Serial.println(STApassword);
   Serial.println(serverIP);
   Serial.println(serverPort);
 }
@@ -125,7 +130,7 @@ void handleNotFound() {
 bool autoConfig()
 {
   WiFi.mode(WIFI_STA);
-  WiFi.begin();
+  WiFi.begin(STAssid,STApassword);
   Serial.print("AutoConfig Waiting......");
   readConfig();
   for (int i = 0; i < 5; i++)
@@ -296,14 +301,13 @@ void setup(void) {
 
 void loop(void) {
     if (WiFi.status() != WL_CONNECTED) { 
-    WiFi.disconnect();
-    Serial.println("connect failure");
-    WiFi.begin();
-    }
+      WiFi.disconnect();
+      Serial.println("wifi failure");
+      autoConfig();
+    } 
     else if(!client.connected()){
-      Serial.println("connect failure");
-        connectServer();
-        return;
+      Serial.println("socket failure");
+      autoConfig();
     }
     else{
       digitalWrite(LED_BUILTIN, LOW); 
