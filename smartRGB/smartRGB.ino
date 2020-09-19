@@ -4,8 +4,6 @@
 #include <ESP8266mDNS.h>
 #include <ArduinoJson.h>
 #include <EEPROM.h>
-
-#include <EEPROM.h>
 //定义一个写和读的通用方法
 #define EEPROM_write(address,p) { int i = 0;byte *pp = (byte*)&(p);for(;i<sizeof(p);i++) EEPROM.write(address+i,pp[i]);EEPROM.end();}
 #define EEPROM_read(address,p) { int i = 0;byte *pp = (byte*)&(p);for(;i<sizeof(p);i++) pp[i]=EEPROM.read(address+i);}
@@ -28,7 +26,7 @@ int address = 0;
 ESP8266WebServer server(80);
 bool LED_Flag = false;
 String str = 
-"<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><meta name=\"viewport\"content=\"width=device-width, initial-scale=1.0\"><meta http-equiv=\"X-UA-Compatible\"content=\"ie=edge\"><title>我爱摸鱼-ESP8266配网</title></head><body><form name=\"my\">WiFiName：<input type=\"text\"name=\"s\"placeholder=\"请输入您WiFi的名称\"id=\"id\"><br>WiFiPassword：<input type=\"text\"name=\"p\"placeholder=\"请输入您WiFi的密码\"id=\"pwd\"><br>serverIP：<input type=\"text\"name=\"p\"placeholder=\"请输入您的服务器IP\"id=\"ip\"><br>ServerPort：<input type=\"text\"name=\"p\"placeholder=\"请输入您的服务器端口号\"id=\"port\"><br><input type=\"button\"value=\"连接\"onclick=\"wifi()\"></form><script language=\"javascript\">function wifi(){var ssid=id.value;var password=pwd.value;var serverIP=ip.value;var serverPort=port.value;var xmlhttp=new XMLHttpRequest();xmlhttp.open(\"GET\",\"/HandleVal?ssid=\"+ssid+\"&password=\"+password+\"&serverIP=\"+serverIP+\"&serverPort=\"+serverPort,true);xmlhttp.send()}</script></body></html>";
+"<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><meta name=\"viewport\"content=\"width=device-width, initial-scale=1.0\"><meta http-equiv=\"X-UA-Compatible\"content=\"ie=edge\"><title>我爱摸鱼-ESP8266配网</title></head><body><form name=\"my\">WiFiName：<input type=\"text\"name=\"s\"placeholder=\"请输入您WiFi的名称\"id=\"id\"><br>WiFiPassword：<input type=\"text\"name=\"p\"placeholder=\"请输入您WiFi的密码\"id=\"pwd\"><br>serverIP：<input type=\"text\"name=\"p\"placeholder=\"请输入您的服务器IP\"id=\"ip\"><br>ServerPort：<input type=\"text\"name=\"p\"placeholder=\"请输入您的服务器端口号\"id=\"port\"><br><input type=\"button\"value=\"连接\"onclick=\"wifi()\"></form><script language=\"javascript\">function wifi(){var ssid=id.value;var password=pwd.value;var serverIP=ip.value;var serverPort=port.value;var xmlhttp=new XMLHttpRequest();xmlhttp.open(\"GET\",\"/HandleVal?ssid=\"+ssid+\"&password=\"+password+\"&serverIP=\"+serverIP+\"&serverPort=\"+serverPort,true);xmlhttp.send();alert(\"WiFiName:\"+ssid+\"WiFiPassword:\"+password+\"serverIP:\"+serverIP+\"ServerPort:\"+serverPort)}</script></body></html>";
 /*****************************************************
  * 函数名称：handleRoot()
  * 函数说明：客户端请求回调函数
@@ -71,7 +69,7 @@ void saveConfig() {
 
 void readConfig()
 {
-    //------------结构体2读----------------
+
   Serial.println("start read config");
   EEPROM.begin(256);//申请空间
   char readback[128];//申请变量
@@ -93,7 +91,7 @@ void readConfig()
   serverIP = IP;
   serverPort = Port;
   /*------串口打印rgb值----*/
-  Serial.println("Json");
+  Serial.println("latest config:");
   Serial.println(STAssid);
   Serial.println(STApassword);
   Serial.println(serverIP);
@@ -127,9 +125,10 @@ void handleNotFound() {
  * 参数说明：无
  * 返回值说明:true：连接成功 false：连接失败
 ******************************************************/
+/*
 bool autoConfig()
 {
-  WiFi.mode(WIFI_STA);
+  WiFi.mode(WIFI_AP_STA);
   WiFi.begin(STAssid,STApassword);
   Serial.print("AutoConfig Waiting......");
   readConfig();
@@ -168,14 +167,14 @@ bool autoConfig()
   return false;
   //WiFi.printDiag(Serial);
 }
+*/
 /*****************************************************
  * 函数名称：htmlConfig()
  * 函数说明：web配置WiFi函数
  * 参数说明：无
 ******************************************************/
-void htmlConfig()
+void smartConfig()
 {
-
     WiFi.mode(WIFI_AP_STA);//设置模式为AP+STA
     digitalWrite(LED_BUILTIN, LOW);
     WiFi.softAP(ssid, password);
@@ -195,10 +194,10 @@ void htmlConfig()
   
     server.begin();//开启服务器
     Serial.println("HTTP server started");
-
     Serial.println("Waitting for config ");
     while(1)
     {
+      
         server.handleClient();
         MDNS.update();
         if (WiFi.status() == WL_CONNECTED)
@@ -206,17 +205,27 @@ void htmlConfig()
           Serial.println("WIFI connect success");
           connectServer(); 
             if (client.connected()) 
-            {            //如果没有连接到服务器
-                Serial.println("HtmlConfig Success");
+            {            
+                Serial.println("smart config success");
                 Serial.printf("SSID:%s\r\n", WiFi.SSID().c_str());
                 Serial.printf("PSW:%s\r\n", WiFi.psk().c_str());
                 Serial.printf("serverIP:%s\r\n", serverIP.c_str());
                 Serial.printf("serverPort:%s\r\n", serverPort.c_str());
+                WiFi.printDiag(Serial);
                 digitalWrite(LED_BUILTIN, LOW); 
                 WiFi.mode(WIFI_STA);
-                 break;
+                break;
             }
                
+        }
+        else if(WiFi.status() != WL_CONNECTED)
+        {
+          Serial.println("try to use latest config:");
+          WiFi.begin(STAssid,STApassword);
+          readConfig();
+          for(int i=0; i<5;i++){
+            delay(1000);
+          }
         }
 
     }  
@@ -240,6 +249,7 @@ String readTcp(){
   } 
   return data;
 }
+
 
 //处理服务器信息
 void tcpHandler(String data){
@@ -282,14 +292,13 @@ void tcpHandler(String data){
  }
 }
 
+
 void setup(void) {
    
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, HIGH);
     Serial.begin(115200);
-    bool wifiConfig = autoConfig();
-    if(wifiConfig == false)
-        htmlConfig();//HTML配网
+    smartConfig();
 
     pinMode(14,OUTPUT);//D5,R
     pinMode(12,OUTPUT);//D6,G
@@ -303,11 +312,11 @@ void loop(void) {
     if (WiFi.status() != WL_CONNECTED) { 
       WiFi.disconnect();
       Serial.println("wifi failure");
-      autoConfig();
+      smartConfig();
     } 
     else if(!client.connected()){
       Serial.println("socket failure");
-      autoConfig();
+      smartConfig();
     }
     else{
       digitalWrite(LED_BUILTIN, LOW); 
