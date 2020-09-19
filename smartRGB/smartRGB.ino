@@ -8,13 +8,7 @@
 #define EEPROM_write(address,p) { int i = 0;byte *pp = (byte*)&(p);for(;i<sizeof(p);i++) EEPROM.write(address+i,pp[i]);EEPROM.end();}
 #define EEPROM_read(address,p) { int i = 0;byte *pp = (byte*)&(p);for(;i<sizeof(p);i++) pp[i]=EEPROM.read(address+i);}
 //注意事项 写的结尾一定要有EEPROM.end();或EEPROM.commit();目的就是提交保存操作否则不保存成功
-//struct serverConfig
-//{
-//  char serverJson[128];
-//}serverInfo;
-
 char serverInfo[128];
-
 WiFiClient client;
 const char* ssid = "CONFIG-ESP8266";
 const char* password = "00001111";
@@ -22,7 +16,7 @@ String STAssid;
 String STApassword;
 String serverIP ;
 String serverPort;
-int address = 0;
+
 ESP8266WebServer server(80);
 bool LED_Flag = false;
 String str = 
@@ -90,7 +84,6 @@ void readConfig()
   STApassword = password;
   serverIP = IP;
   serverPort = Port;
-  /*------串口打印rgb值----*/
   Serial.println("latest config:");
   Serial.println(STAssid);
   Serial.println(STApassword);
@@ -119,60 +112,8 @@ void handleNotFound() {
   server.send(404, "text/plain", message);
   digitalWrite(LED_BUILTIN, 1);
 }
-/*****************************************************
- * 函数名称：autoConfig()
- * 函数说明：自动连接WiFi函数
- * 参数说明：无
- * 返回值说明:true：连接成功 false：连接失败
-******************************************************/
-/*
-bool autoConfig()
-{
-  WiFi.mode(WIFI_AP_STA);
-  WiFi.begin(STAssid,STApassword);
-  Serial.print("AutoConfig Waiting......");
-  readConfig();
-  for (int i = 0; i < 5; i++)
-  {
-    Serial.println("Trying auto config");
-    delay(1000);
-    if (WiFi.status() == WL_CONNECTED)
-    {
-      Serial.println("WIFI success");
-      connectServer(); 
-      Serial.println("serverIP,after read config"); 
-      Serial.println(serverIP);
-      if (client.connected()) 
-        {            
-            Serial.println("AutoConfig Success");
-            Serial.printf("SSID:%s\r\n", WiFi.SSID().c_str());
-            Serial.printf("PSW:%s\r\n", WiFi.psk().c_str());
-            Serial.printf("serverIP:%s\r\n", serverIP.c_str());
-            Serial.printf("serverPort:%s\r\n", serverPort.c_str());
-            WiFi.printDiag(Serial);
-            return true;
-        }
-    }
-    else
-    {
-      LED_Flag = !LED_Flag;
-      if(LED_Flag)
-          digitalWrite(LED_BUILTIN, HIGH);
-      else
-          digitalWrite(LED_BUILTIN, LOW); 
-      delay(500);
-    }
-  }
-  Serial.println("AutoConfig Faild!" );
-  return false;
-  //WiFi.printDiag(Serial);
-}
-*/
-/*****************************************************
- * 函数名称：htmlConfig()
- * 函数说明：web配置WiFi函数
- * 参数说明：无
-******************************************************/
+
+
 void smartConfig()
 {
     WiFi.mode(WIFI_AP_STA);//设置模式为AP+STA
@@ -212,7 +153,7 @@ void smartConfig()
                 Serial.printf("serverIP:%s\r\n", serverIP.c_str());
                 Serial.printf("serverPort:%s\r\n", serverPort.c_str());
                 WiFi.printDiag(Serial);
-                digitalWrite(LED_BUILTIN, LOW); 
+                digitalWrite(LED_BUILTIN, HIGH); 
                 WiFi.mode(WIFI_STA);
                 break;
             }
@@ -319,7 +260,7 @@ void loop(void) {
       smartConfig();
     }
     else{
-      digitalWrite(LED_BUILTIN, LOW); 
+      //digitalWrite(LED_BUILTIN, HIGH); 
       tcpHandler(readTcp()); 
     }
 }
