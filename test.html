@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible"content="ie=edge">
+  <title>我爱摸鱼-ESP8266配网</title>
+</head>
+
+<body>
+  <form name="my">WiFiName：<input type="text"name="s"placeholder="请输入您WiFi的名称"id="id">
+    <br>WiFiPassword：<input type="text"name="p"placeholder="请输入您WiFi的密码"id="pwd">
+    <br>serverIP：<input type="text"name="p"placeholder="请输入您的服务器IP"id="ip">
+    <br>ServerPort：<input type="text"name="p"placeholder="请输入您的服务器端口号"id="port">
+    <br><input type="button"value="连接"onclick="wifi()"></form>
+  <script language="javascript">
+    function wifi() {
+      var ssid = id.value;
+      var password = pwd.value;
+      var serverIP = ip.value;
+      var serverPort = port.value;
+      var xmlhttp = new XMLHttpRequest();
+      xmlhttp.open("GET","/HandleVal?ssid="+ssid+"&password="+password+"&serverIP="+serverIP+"&serverPort="+serverPort,true);
+      xmlhttp.send();
+      alert("WiFiName:"+ssid+"WiFiPassword:"+password+"serverIP:"+serverIP+"ServerPort:"+serverPort);
+  }
+
+  </script>
+</body>
+
+</html>
