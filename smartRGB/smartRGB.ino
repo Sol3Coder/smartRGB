@@ -10,10 +10,12 @@
 #define EEPROM_write(address,p) { int i = 0;byte *pp = (byte*)&(p);for(;i<sizeof(p);i++) EEPROM.write(address+i,pp[i]);EEPROM.end();}
 #define EEPROM_read(address,p) { int i = 0;byte *pp = (byte*)&(p);for(;i<sizeof(p);i++) pp[i]=EEPROM.read(address+i);}
 //注意事项 写的结尾一定要有EEPROM.end();或EEPROM.commit();目的就是提交保存操作否则不保存成功
-struct serverConfig
-{
-  char serverJson[128];
-}serverInfo;
+//struct serverConfig
+//{
+//  char serverJson[128];
+//}serverInfo;
+
+char serverInfo[128];
 
 WiFiClient client;
 const char* ssid = "CONFIG-ESP8266";
@@ -51,7 +53,7 @@ void HandleVal()
     Serial.println(serverIP); 
     Serial.println(serverPort);
     WiFi.begin(STAssid,STApassword);
-    sprintf(serverInfo.serverJson,"{\"serverIP\":\"%s\",\"serverPort\":%s}",serverIP.c_str(),serverPort.c_str());
+    sprintf(serverInfo,"{\"serverIP\":\"%s\",\"serverPort\":%s}",serverIP.c_str(),serverPort.c_str());
     saveConfig();
     connectServer();  
 }
@@ -59,7 +61,7 @@ void HandleVal()
 void saveConfig() {
 
   EEPROM.begin(256);//申请空间必须大于结构体长度，4的倍数
-  sprintf(serverInfo.serverJson,"{\"serverIP\":\"%s\",\"serverPort\":%s}",serverIP.c_str(),serverPort.c_str());
+  sprintf(serverInfo,"{\"serverIP\":\"%s\",\"serverPort\":%s}",serverIP.c_str(),serverPort.c_str());
   Serial.println("\n");
   Serial.println("start");
   Serial.println(sizeof(serverInfo));
@@ -73,15 +75,15 @@ void readConfig()
     //------------结构体2读----------------
   Serial.println("start read config");
   EEPROM.begin(256);//申请空间
-  serverConfig readback;//申请变量
+  char readback[128];//申请变量
   EEPROM_read(0, readback);//读数据
   Serial.print("serverinfo:");
-  Serial.println(readback.serverJson);//打印数据
+  Serial.println(readback);//打印数据
   Serial.println("read eeprom over!");
 
     /*-------json解析-------*/
   DynamicJsonDocument doc(1024);
-  deserializeJson(doc, readback.serverJson);
+  deserializeJson(doc, readback);
   JsonObject obj = doc.as<JsonObject>();
   String IP = doc["serverIP"]; 
   String Port = doc["serverPort"]; 
@@ -194,11 +196,10 @@ void htmlConfig()
     {
         server.handleClient();
         MDNS.update();
-
-            connectServer();  
-
         if (WiFi.status() == WL_CONNECTED)
         {
+          Serial.println("WIFI connect success");
+          connectServer(); 
             if (client.connected()) 
             {            //如果没有连接到服务器
                 Serial.println("HtmlConfig Success");
@@ -207,6 +208,7 @@ void htmlConfig()
                 Serial.printf("serverIP:%s\r\n", serverIP.c_str());
                 Serial.printf("serverPort:%s\r\n", serverPort.c_str());
                 digitalWrite(LED_BUILTIN, LOW); 
+                WiFi.mode(WIFI_STA);
                  break;
             }
                
@@ -295,10 +297,12 @@ void setup(void) {
 void loop(void) {
     if (WiFi.status() != WL_CONNECTED) { 
     WiFi.disconnect();
-    WiFi.begin(STAssid, STApassword);
+    Serial.println("connect failure");
+    htmlConfig();
     }
     else if(!client.connected()){
-        connectServer();
+      Serial.println("connect failure");
+        htmlConfig();
         return;
     }
     else{
