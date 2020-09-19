@@ -1,5 +1,5 @@
 # 概述
-在esp8266内烧写简单html，以完成web配网
+在esp8266内烧写简单html(内容见test.html)，以完成web配网
 
 利用eeprom断电保存特性完成自动重连
 
