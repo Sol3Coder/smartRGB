@@ -1,6 +1,3 @@
-# smartRGB
-
-
 # 概述
 在esp8266内烧写简单html，以完成web配网
 
