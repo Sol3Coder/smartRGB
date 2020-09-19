@@ -3,13 +3,9 @@
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
 
-#ifndef STASSID
-#define STASSID "test"
-#define STAPSK  "00001111"
-#endif
 WiFiClient client;
-const char* ssid = STASSID;
-const char* password = STAPSK;
+const char* ssid = "CONFIG-ESP8266";
+const char* password = "00001111";
 String STAssid;
 String STApassword;
 String serverIP ;
@@ -43,7 +39,7 @@ void HandleVal()
     Serial.println(serverIP); 
     Serial.println(serverPort);
     WiFi.begin(STAssid,STApassword);
-    connectServer();
+    connectServer();  
 }
 /*****************************************************
  * 函数名称：handleNotFound()
@@ -81,20 +77,17 @@ bool autoConfig()
   {
     if (WiFi.status() == WL_CONNECTED)
     {
-      Serial.println("AutoConfig Success");
-      Serial.printf("SSID:%s\r\n", WiFi.SSID().c_str());
-      Serial.printf("PSW:%s\r\n", WiFi.psk().c_str());
-      Serial.printf("serverIP:%s\r\n", serverIP.c_str());
-      Serial.printf("serverPort:%s\r\n", serverPort.c_str());
-      WiFi.printDiag(Serial);
-      connectServer();
+      connectServer();  
       if (client.connected()) 
-        {            //如果没有连接到服务器
-            Serial.println("服务器连接成功");
+        {            
+            Serial.println("AutoConfig Success");
+            Serial.printf("SSID:%s\r\n", WiFi.SSID().c_str());
+            Serial.printf("PSW:%s\r\n", WiFi.psk().c_str());
+            Serial.printf("serverIP:%s\r\n", serverIP.c_str());
+            Serial.printf("serverPort:%s\r\n", serverPort.c_str());
+            WiFi.printDiag(Serial);
             return true;
         }
-      
-      //break;
     }
     else
     {
@@ -144,7 +137,9 @@ void htmlConfig()
     {
         server.handleClient();
         MDNS.update();
-        connectServer();  
+
+            connectServer();  
+
         if (WiFi.status() == WL_CONNECTED)
         {
             if (client.connected()) 
@@ -164,12 +159,11 @@ void htmlConfig()
 
 void connectServer() {
   if(serverIP!=""){
-  Serial.println("尝试连接服务器");
-  Serial.println(serverIP);
-  client.connect(serverIP, serverPort.toInt());
-  delay(1000);
+      Serial.println("Try to connecet server");
+      Serial.println(serverIP);
+      client.connect(serverIP, serverPort.toInt());
+      delay(1000);
   }
-
 }
 
 void setup(void) {
@@ -179,7 +173,6 @@ void setup(void) {
     bool wifiConfig = autoConfig();
     if(wifiConfig == false)
         htmlConfig();//HTML配网
-    connectServer();
 }
 
 void loop(void) {
