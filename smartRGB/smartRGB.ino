@@ -4,6 +4,8 @@
 #include <ESP8266mDNS.h>
 #include <ArduinoJson.h>
 #include <EEPROM.h>
+
+
 //定义一个写和读的通用方法
 #define EEPROM_write(address,p) { int i = 0;byte *pp = (byte*)&(p);for(;i<sizeof(p);i++) EEPROM.write(address+i,pp[i]);EEPROM.end();}
 #define EEPROM_read(address,p) { int i = 0;byte *pp = (byte*)&(p);for(;i<sizeof(p);i++) pp[i]=EEPROM.read(address+i);}
@@ -18,6 +20,7 @@ String serverIP ;
 String serverPort;
 
 ESP8266WebServer server(80);
+bool htmlFlag = false;
 bool LED_Flag = false;
 String str = 
 "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><meta name=\"viewport\"content=\"width=device-width, initial-scale=1.0\"><meta http-equiv=\"X-UA-Compatible\"content=\"ie=edge\"><title>我爱摸鱼-ESP8266配网</title></head><body><form name=\"my\">WiFiName：<input type=\"text\"name=\"s\"placeholder=\"请输入您WiFi的名称\"id=\"id\"><br>WiFiPassword：<input type=\"text\"name=\"p\"placeholder=\"请输入您WiFi的密码\"id=\"pwd\"><br>serverIP：<input type=\"text\"name=\"p\"placeholder=\"请输入您的服务器IP\"id=\"ip\"><br>ServerPort：<input type=\"text\"name=\"p\"placeholder=\"请输入您的服务器端口号\"id=\"port\"><br><input type=\"button\"value=\"连接\"onclick=\"wifi()\"></form><script language=\"javascript\">function wifi(){var ssid=id.value;var password=pwd.value;var serverIP=ip.value;var serverPort=port.value;var xmlhttp=new XMLHttpRequest();xmlhttp.open(\"GET\",\"/HandleVal?ssid=\"+ssid+\"&password=\"+password+\"&serverIP=\"+serverIP+\"&serverPort=\"+serverPort,true);xmlhttp.send();alert(\"WiFiName:\"+ssid+\"WiFiPassword:\"+password+\"serverIP:\"+serverIP+\"ServerPort:\"+serverPort)}</script></body></html>";
@@ -40,14 +43,20 @@ void HandleVal()
     STApassword = server.arg("password"); //从JavaScript发送的数据中找password的值
     serverIP = server.arg("serverIP"); //从JavaScript发送的数据中找ssid的值
     serverPort = server.arg("serverPort"); //从JavaScript发送的数据中找ssid的值
+    Serial.println("get html"); 
+
     Serial.println(STAssid); 
     Serial.println(STApassword);
     Serial.println(serverIP); 
     Serial.println(serverPort);
-    WiFi.begin(STAssid,STApassword);
+
     sprintf(serverInfo,"{\"STAssid\":\"%s\",\"STApassword\":\"%s\",\"serverIP\":\"%s\",\"serverPort\":%s}",STAssid.c_str(),STApassword.c_str(),serverIP.c_str(),serverPort.c_str());
     saveConfig();
-    connectServer();  
+
+    htmlFlag = true;
+//    WiFi.begin(STAssid,STApassword);
+//    connectServer();  
+//    ESP.reset();
 }
 
 void saveConfig() {
@@ -68,9 +77,9 @@ void readConfig()
   EEPROM.begin(256);//申请空间
   char readback[128];//申请变量
   EEPROM_read(0, readback);//读数据
-  Serial.print("serverinfo:");
-  Serial.println(readback);//打印数据
-  Serial.println("read eeprom over!");
+//  Serial.print("config info:");
+//  Serial.println(readback);//打印数据
+//  Serial.println("read eeprom over!");
 
     /*-------json解析-------*/
   DynamicJsonDocument doc(1024);
@@ -85,9 +94,11 @@ void readConfig()
   serverIP = IP;
   serverPort = Port;
   Serial.println("latest config:");
-  Serial.println(STAssid);
+  Serial.print(STAssid);
+  Serial.print("---");
   Serial.println(STApassword);
-  Serial.println(serverIP);
+  Serial.print(serverIP);
+  Serial.print("---");
   Serial.println(serverPort);
 }
 
@@ -113,13 +124,57 @@ void handleNotFound() {
   digitalWrite(LED_BUILTIN, 1);
 }
 
-
-void smartConfig()
+bool autoConfig()
 {
-    WiFi.mode(WIFI_AP_STA);//设置模式为AP+STA
+//  WiFi.mode(WIFI_AP_STA);
+  readConfig();
+  WiFi.begin(STAssid,STApassword);
+  Serial.println("Start Auto Config");
+  for (int i = 0; i < 10; i++)
+  {
+    if (WiFi.status() == WL_CONNECTED)
+    {
+      if (client.connected()) 
+        {            
+            Serial.println("AutoConfig Success");
+            Serial.printf("SSID:%s\r\n", WiFi.SSID().c_str());
+            Serial.printf("PSW:%s\r\n", WiFi.psk().c_str());
+            Serial.printf("serverIP:%s\r\n", serverIP.c_str());
+            Serial.printf("serverPort:%s\r\n", serverPort.c_str());
+            WiFi.printDiag(Serial);
+            WiFi.mode(WIFI_STA);
+            return true;
+        }
+      else 
+      {
+            connectServer();  
+      }
+    }
+    else
+    {
+      LED_Flag = !LED_Flag;
+      if(LED_Flag)
+          digitalWrite(LED_BUILTIN, HIGH);
+      else
+          digitalWrite(LED_BUILTIN, LOW); 
+      delay(500);
+    }
+  }
+  Serial.println("AutoConfig Faild!" );
+  return false;
+  //WiFi.printDiag(Serial);
+}
+/*****************************************************
+ * 函数名称：htmlConfig()
+ * 函数说明：web配置WiFi函数
+ * 参数说明：无
+******************************************************/
+void htmlConfig()
+{
+//    WiFi.mode(WIFI_AP_STA);//设置模式为AP+STA
     digitalWrite(LED_BUILTIN, LOW);
     WiFi.softAP(ssid, password);
-    Serial.println("Start AP mode");
+    Serial.println("Start Html Config");
     
     IPAddress myIP = WiFi.softAPIP();
     Serial.print("AP IP address: ");
@@ -135,19 +190,35 @@ void smartConfig()
   
     server.begin();//开启服务器
     Serial.println("HTTP server started");
-    Serial.println("Waitting for config ");
+    Serial.println("Waitting for html config");
     while(1)
     {
-      
+
         server.handleClient();
         MDNS.update();
+        if(htmlFlag)
+        {
+          if(autoConfig())
+          {
+            break;
+          }
+        }
+
+        /*
+        readConfig();
+        WiFi.begin(STAssid,STApassword);
+        Serial.println(STAssid);
+        Serial.println(STApassword);
+        Serial.println("try to connect wifi");
+        Serial.print(".");
+        delay(1000);
         if (WiFi.status() == WL_CONNECTED)
         {
           Serial.println("WIFI connect success");
           connectServer(); 
             if (client.connected()) 
             {            
-                Serial.println("smart config success");
+                Serial.println("html config success");
                 Serial.printf("SSID:%s\r\n", WiFi.SSID().c_str());
                 Serial.printf("PSW:%s\r\n", WiFi.psk().c_str());
                 Serial.printf("serverIP:%s\r\n", serverIP.c_str());
@@ -157,19 +228,25 @@ void smartConfig()
                 WiFi.mode(WIFI_STA);
                 break;
             }
-               
-        }
-        else if(WiFi.status() != WL_CONNECTED)
-        {
-          Serial.println("try to use latest config:");
-          WiFi.begin(STAssid,STApassword);
-          readConfig();
-          for(int i=0; i<5;i++){
-            delay(1000);
-          }
         }
 
+        */
+
     }  
+}
+
+void smartConfig(){
+      WiFi.mode(WIFI_AP_STA);//设置模式为AP+STA
+//      delay(1000);
+      Serial.print("Stations connected =");
+      Serial.println(WiFi.softAPgetStationNum());
+      if(!WiFi.softAPgetStationNum())
+      {
+        autoConfig();
+      }
+      else{
+        htmlConfig();
+      }
 }
 
 void connectServer() {
@@ -190,7 +267,6 @@ String readTcp(){
   } 
   return data;
 }
-
 
 //处理服务器信息
 void tcpHandler(String data){
@@ -240,7 +316,6 @@ void setup(void) {
     digitalWrite(LED_BUILTIN, HIGH);
     Serial.begin(115200);
     smartConfig();
-
     pinMode(14,OUTPUT);//D5,R
     pinMode(12,OUTPUT);//D6,G
     pinMode(13,OUTPUT);//D7,B
@@ -250,6 +325,8 @@ void setup(void) {
 }
 
 void loop(void) {
+
+//  smartConfig();
     if (WiFi.status() != WL_CONNECTED) { 
       WiFi.disconnect();
       Serial.println("wifi failure");
@@ -257,6 +334,7 @@ void loop(void) {
     } 
     else if(!client.connected()){
       Serial.println("socket failure");
+      WiFi.disconnect();
       smartConfig();
     }
     else{
