@@ -37,9 +37,9 @@ http://arduino.esp8266.com/stable/package_esp8266com_index.json
 
 如有设备接入则开启web配网，生成上述wifi，控制设备进入192.168.4.1按照提示即可完成配网
 
-web配网流程为：将一段html保存在一个String变量里，开启server模式，利用get请求获取web发来的网络参数(可利用工具将html压缩为一行，同时需注意将 " 替换为 \" )
+web配网流程为：将一段html保存在一个String变量里，开启server模式，利用get请求获取web发来的网络参数(可利用工具将html压缩为一行，同时需注意将 " 替换为 \"  )
 
-若网络连接成功，板载led会熄灭，可观察板载led判断配网是否成功
+若网络连接成功，板载led会熄灭(熄灭状态应向板载led写高，版本更新问题可能遗漏，懒得改了。目前只保证smartConfig正确)，可观察板载led判断配网是否成功
 
 配网完成后进入loop循环，每一次循环会读取tcp server是否发送信息，根据server发来的信息调整rgb值
 
