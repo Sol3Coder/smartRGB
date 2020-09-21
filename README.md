@@ -15,11 +15,17 @@ esp8266作为tcp client
 
 服务端发送json样例：{"rValue":123,"gValue":80,"bValue":200}
 
-smartLed为实训所用文件(smartConfig兼容smartLed与smartRGB的功能，但比较臃肿)，不包含自由调整RGB功能
+smartLed为实训所用(目前最新版本板载led有不管，懒得修了，修复方法见下述)，不包含自由调整RGB功能
 
 用法为服务器发送数字，共六组数字
 
 1111代表红色，2255代表黄色，2060代表蓝色，2056代表绿色，2250代表粉色，1211代表关灯
+
+smartConfig兼容smartLed与smartRGB的功能，但比较臃肿。
+
+smartLed与smartRGB主要区别为tcphandler函数，实训所用较为简单，无需传输json字符串，故可精简tcpHandler函数
+
+
 
 # 开发环境
 
@@ -37,9 +43,9 @@ http://arduino.esp8266.com/stable/package_esp8266com_index.json
 
 如有设备接入则开启web配网，生成上述wifi，控制设备进入192.168.4.1按照提示即可完成配网
 
-web配网流程为：将一段html保存在一个String变量里，开启server模式，利用get请求获取web发来的网络参数(可利用工具将html压缩为一行，同时需注意将 " 替换为 \"  )
+web配网流程为：将一段html保存在一个String变量里，开启server模式，利用get请求获取web发来的网络参数(可利用工具将html压缩为一行，同时需注意将 " 替换为 \\"  )
 
-若网络连接成功，板载led会熄灭(熄灭状态应向板载led写高，版本更新问题可能遗漏，懒得改了。目前只保证smartConfig正确)，可观察板载led判断配网是否成功
+若网络连接成功，板载led会熄灭(熄灭状态应向板载led写高，版本更新问题可能遗漏，目前只保证smartConfig正确)，可观察板载led判断配网是否成功
 
 配网完成后进入loop循环，每一次循环会读取tcp server是否发送信息，根据server发来的信息调整rgb值
 
