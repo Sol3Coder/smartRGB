@@ -15,7 +15,7 @@ esp8266作为tcp client
 
 服务端发送json样例：{"rValue":123,"gValue":80,"bValue":200}
 
-smartLed为实训所用文件，不包含自由调整RGB功能
+smartLed为实训所用文件(smartConfig兼容smartLed与smartRGB的功能，但比较臃肿)，不包含自由调整RGB功能
 
 用法为服务器发送数字，共六组数字
 
