@@ -63,11 +63,10 @@ void saveConfig() {
 
   EEPROM.begin(256);//申请空间必须大于结构体长度，4的倍数
 //  sprintf(serverInfo,"{\"serverIP\":\"%s\",\"serverPort\":%s}",serverIP.c_str(),serverPort.c_str());
-  Serial.println("start");
+  Serial.println("start eeprom write");
   Serial.println(sizeof(serverInfo));
   EEPROM_write(0, serverInfo);//写地址128+1 结构体2
-  Serial.println("write ok!");
-
+  EEPROM.commit();
 }
 
 void readConfig()
@@ -190,11 +189,10 @@ void htmlConfig()
   
     server.begin();//开启服务器
     Serial.println("HTTP server started");
-
+    Serial.println("Waitting for html config");
     while(1)
     {
 
-        Serial.println("Waitting for config");
         server.handleClient();
         MDNS.update();
         if(htmlFlag)
@@ -269,7 +267,6 @@ String readTcp(){
   return data;
 }
 
-
 //处理服务器信息
 void tcpHandler(String data){
 
@@ -340,6 +337,7 @@ void loop(void) {
     } 
     else if(!client.connected()){
       Serial.println("socket failure");
+      WiFi.disconnect();
       smartConfig();
     }
     else{
