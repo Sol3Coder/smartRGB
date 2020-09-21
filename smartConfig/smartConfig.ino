@@ -142,6 +142,7 @@ bool autoConfig()
             Serial.printf("serverPort:%s\r\n", serverPort.c_str());
             WiFi.printDiag(Serial);
             WiFi.mode(WIFI_STA);
+            digitalWrite(LED_BUILTIN, HIGH); 
             return true;
         }
       else 
