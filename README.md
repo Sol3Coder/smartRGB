@@ -33,7 +33,9 @@ arduino IDE，需在附加开发板管理器网址中输入下述网址以添加
 
 http://arduino.esp8266.com/stable/package_esp8266com_index.json
 
-添加支持后在管理库选项中搜索esp8266安装即可
+添加支持后在管理开发板选项中搜索8266，安装社区版开发板支持
+
+然后在管理库中搜索8266，安装库
 
 
 # 程序描述
